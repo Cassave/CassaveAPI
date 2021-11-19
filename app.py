@@ -1,17 +1,35 @@
-from flask import Flask
+from flask import Flask, request, jsonify
 from flask_cors import CORS
+import torch
+import numpy as np
+from PIL import Image
+from src import get_label
 
 app = Flask(__name__)
+CORS(app)
+
+model = torch.jit.load('./models/model.pt')
 
 
 @app.route("/")
 def hello():
-    return "hello"
+    return jsonify({"message": "hello"})
 
 
-@app.route("/predict")
+@app.route("/predict", methods=['POST'])
 def predict():
-    return "Cassava Green Mite"
+    if "file" not in request.files:
+        resp = jsonify({"message": "no file"})
+        resp.status_code = 400
+        return resp
+    else:
+        model.cpu()
+        img = Image.open(request.files["file"].stream).convert(
+            "RGB").resize((512, 512))
+        img = np.array(img)
+        img = torch.from_numpy(img).unsqueeze(0)
+        label = model(img.cpu())[0].item()
+        return jsonify({"label": label, "label_name": get_label(label)})
 
 
 if __name__ == "__main__":
