@@ -11,15 +11,11 @@ CORS(app)
 model = torch.jit.load('./models/model.pt')
 
 
-@app.route("/")
-def hello():
-    return jsonify({"message": "hello"})
-
 
 @app.route("/predict", methods=['POST'])
 def predict():
     if "file" not in request.files:
-        resp = jsonify({"message": "no file"})
+        resp = jsonify({"message": "No file found"})
         resp.status_code = 400
         return resp
     else:
@@ -29,7 +25,7 @@ def predict():
         img = np.array(img)
         img = torch.from_numpy(img).unsqueeze(0)
         label = model(img.cpu())[0].item()
-        return jsonify({"label": label, "label_name": get_label(label)})
+        return jsonify(get_label(label))
 
 
 if __name__ == "__main__":
